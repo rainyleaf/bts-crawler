@@ -67,3 +67,7 @@ for album in releasesSorted:
         for boy in theBoys:
             color = theBoys[boy][0]
             getMemberLines(theBoys, color, boy, romanization)
+
+outfile.write('\n####################\n\nGLOBAL VALUES\n')
+for boy in boyTotals:
+    outfile.write('\t%s:\t%s\t%.2f%%\n' % (boy, boyTotals[boy], float(boyTotals[boy]/sum(boyTotals.values()))*100))
