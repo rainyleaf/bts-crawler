@@ -41,7 +41,7 @@ releasesSorted = []
 
 for release in releases:
     title = re.findall('\[#\d+\](.*?)<', release, re.DOTALL)
-    tracks = re.findall('href="(.*?)">(.*?)<', release, re.DOTALL)
+    tracks = re.findall('href="(.*?)".*?>(.*?)<', release, re.DOTALL)
 
     titleAndTracks = [title, tracks]
     releasesSorted.append(titleAndTracks)
@@ -53,6 +53,7 @@ for album in releasesSorted:
     for song in tracklist:
         outfile.write('\t' + song[1] + '\n')
         songDir = song[0]
+        print(songDir)
         songHtml = html.unescape(urllib.request.urlopen(songDir).read().decode('utf-8'))
         romanization = re.findall('<tbody>.<tr>.*?</tr>.<tr>.<td>(.*?)</td>', songHtml, re.DOTALL)[0]
         theBoys = {
