@@ -27,9 +27,10 @@ def getMemberLines(d, color, member, lyrics):
 	 outfile.write('\t\t%s: %s\n' % (member, d[member][1]))
 	 boyTotals[member] += d[member][1]
 
-btsDir = 'https://colorcodedlyrics.com/2014/01/bts-lyrics-index'	#change this to match group
+#btsDir = 'https://colorcodedlyrics.com/2014/01/bts-lyrics-index'	#change this to match group
+lyrics_index = 'https://colorcodedlyrics.com/2012/02/shinee_syaini_lyrics_index'
 
-siteHtml = html.unescape(urllib.request.urlopen(btsDir).read().decode('utf-8'))		#html.unescape: Convert all named and numeric character references (e.g. &gt; , &#62; , &x3e; ) in the string s to the corresponding unicode characters.
+siteHtml = html.unescape(urllib.request.urlopen(lyrics_index).read().decode('utf-8'))		#html.unescape: Convert all named and numeric character references (e.g. &gt; , &#62; , &x3e; ) in the string s to the corresponding unicode characters.
 
 rows = re.findall('<tbody>(.*?)</tbody>', siteHtml, re.DOTALL)		#everything in first giant chunk (includes japanese albums)
 rows = rows[0]
@@ -52,16 +53,24 @@ for album in releasesParsed:		#for each list containing string and other list wi
 	for song in tracklist:					#per track url
 		outfile.write('\t' + song[1] + '\n')	#song title, second item in each tuple
 		songDir = song[0]						#song link
-		songHtml = html.unescape(urllib.request.urlopen(songDir).read().decode('utf-8'))	#open, decode, unescape characters
-		romanization = re.findall('<tbody>.<tr>.*?</tr>.<tr>.<td>(.*?)</td>', songHtml, re.DOTALL)[0]	#maybe just change to 1 to get hangul
+		try:
+			songHtml = html.unescape(urllib.request.urlopen(songDir).read().decode('utf-8'))	#open, decode, unescape characters
+		except Exception:
+			continue
+		#songHtml = html.unescape(urllib.request.urlopen(songDir).read().decode('utf-8'))	#open, decode, unescape characters
+		#romanization = re.findall('<tbody>.<tr>.*?</tr>.<tr>.<td>(.*?)</td>', songHtml, re.DOTALL)[0]	#maybe just change to 1 to get hangul
 		#for korean:				<tbody>.<tr>.*?</tr>.<tr>.<td>.*?</td><td>(.*?)</td>
-		#hangul = re.findall('<tbody>.<tr>.*?</tr>.<tr>.<td>.*?</td><td>(.*?)</td>', songHtml, re.DOTALL)[0]
-		#hangul_text = hangul[0]
-		romanization = romanization.replace('<br />', '')
-		romanization = re.sub('<.*?>', '', romanization)
-		romanization = romanization.split('\n')
-		for line in romanization:
-			print('New line: ' + line)
+		try:
+			hangul = re.findall('<tbody>.<tr>.*?</tr>.<tr>.<td>.*?</td>.<td>(.*?)</td>', songHtml, re.DOTALL)[0]
+		except Exception:
+			continue 
+		#working_text = hangul[0]
+		working_text = hangul
+		working_text = working_text.replace('<br />', '')
+		working_text = re.sub('<.*?>', '', working_text)
+		working_text = working_text.split('\n')
+		for line in working_text:
+			#print('New line: ' + line)
 			line = line.strip()
 			outfile.write('\t\t%s\n' % line)
 		outfile.write('\n')
