@@ -3,7 +3,9 @@ import urllib.request
 import sys
 import html
 import codecs
+from collections import defaultdict
 
+band = sys.argv[1]		#whatever you enter as the band must be in the lyric_indices file
 # boyTotals = {		#probably going to need to use defaultdict to change this to dynamically make a dict of member names
 #	 "Rap Monster": 0,
 #	 "Suga": 0,
@@ -13,25 +15,37 @@ import codecs
 #	 "Jungkook": 0,
 #	 "Jin": 0
 # }
-outfile = codecs.open(sys.argv[1], 'w', 'utf-8', 'ignore')
+outfile = codecs.open(band + '_all_hangul.txt', 'w', 'utf-8', 'ignore')
+english_outfile = codecs.open(band + '_english_only.txt', 'w', 'utf-8', 'ignore')
 
-def getMemberLines(d, color, member, lyrics):
-	 global boyTotals
-	 global outfile
-	 regexString = '<span style="color: ' + color + '">(.*?)</span>'
-	 lines = re.findall(regexString, lyrics, re.DOTALL)
-	 for line in lines:
-		 line = line.replace('<br />', '').split()
-		 for word in line:
-			 d[member][1] += 1
-	 outfile.write('\t\t%s: %s\n' % (member, d[member][1]))
-	 boyTotals[member] += d[member][1]
+d = defaultdict(int)
+
+lyrics_dict = {}
+
+readfile = open('lyric_indices.txt', 'r')
+
+for line in readfile:
+	line = line.split('\t')
+	lyrics_dict[line[0]] = line[1]
+# def getMemberLines(d, color, member, lyrics):
+# 	 global boyTotals
+# 	 global outfile
+# 	 regexString = '<span style="color: ' + color + '">(.*?)</span>'
+# 	 lines = re.findall(regexString, lyrics, re.DOTALL)
+# 	 for line in lines:
+# 		 line = line.replace('<br />', '').split()
+# 		 for word in line:
+# 			 d[member][1] += 1
+# 	 outfile.write('\t\t%s: %s\n' % (member, d[member][1]))
+# 	 boyTotals[member] += d[member][1]
 
 #lyrics_index = 'https://colorcodedlyrics.com/2014/01/bts-lyrics-index'	#bts
 #lyrics_index = 'https://colorcodedlyrics.com/2012/02/shinee_syaini_lyrics_index' #shinee
 #lyrics_index = 'https://colorcodedlyrics.com/2012/02/2ne1_lyrics_index' #2ne1
 #lyrics_index = 'https://colorcodedlyrics.com/2013/03/kara-kala-lyrics-index' #KARA
-lyrics_index = 'https://colorcodedlyrics.com/2016/04/twice-lyrics-index' #TWICE
+#lyrics_index = 'https://colorcodedlyrics.com/2016/04/twice-lyrics-index' #TWICE
+
+lyrics_index = lyrics_dict[band]
 
 siteHtml = html.unescape(urllib.request.urlopen(lyrics_index).read().decode('utf-8'))		#html.unescape: Convert all named and numeric character references (e.g. &gt; , &#62; , &x3e; ) in the string s to the corresponding unicode characters.
 
@@ -53,12 +67,14 @@ for album in releasesParsed:		#for each list containing string and other list wi
 	albumTitle = album[0]
 	try:
 		outfile.write(albumTitle[0] + '\n')		#printing the album title - first item in probably one-item list, might be more items but we don't want those
+		english_outfile.write(albumTitle[0] + '\n')
 		tracklist = album[1]					#sublist with track urls
 	except Exception:
 		continue
 
 	for song in tracklist:					#per track url
 		outfile.write('\t' + song[1] + '\n')	#song title, second item in each tuple
+		english_outfile.write('\t' + song[1] + '\n')
 		songDir = song[0]						#song link
 		try:
 			songHtml = html.unescape(urllib.request.urlopen(songDir).read().decode('utf-8'))	#open, decode, unescape characters
@@ -70,7 +86,7 @@ for album in releasesParsed:		#for each list containing string and other list wi
 			hangul = re.findall('<tbody>.<tr>.*?</tr>.<tr>.<td>.*?</td>.<td>(.*?)</td>', songHtml, re.DOTALL)[0]
 		except Exception:
 			continue
-		working_text = hangul
+		working_text = hangul								#change this depending on desired printout
 		working_text = working_text.replace('<br />', '')
 		working_text = re.sub('<.*?>', '', working_text)
 		working_text = working_text.split('\n')
@@ -78,9 +94,20 @@ for album in releasesParsed:		#for each list containing string and other list wi
 			#print('New line: ' + line)
 			line = line.strip()
 			outfile.write('\t\t%s\n' % line)
+			line = re.sub('[^a-zA-Z\' ]', '', line)
+			line = line.split()
+			for word in line:
+				word = word.lower()
+				d[word] += 1
+			line = ' '.join(line)
+			if len(line) < 1:
+				continue
+			english_outfile.write('\t\t%s\n' % line)
 		outfile.write('\n')
+		english_outfile.write('\n')
 
-
+for entry in sorted(d.items(), key=lambda x: (-x[1],x[0])):
+    print ('%s\t%s' % (entry[0], entry[1]))
 		# theBoys = {
 		#	 "Rap Monster": ['#ea9947', 0],		  #manually find colors for members
 		#	 "Suga": ['#46bd41', 0],				 #should be consistent for each member across songs
