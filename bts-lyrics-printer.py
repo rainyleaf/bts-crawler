@@ -15,8 +15,8 @@ band = sys.argv[1]		#whatever you enter as the band must be in the lyric_indices
 #	 "Jungkook": 0,
 #	 "Jin": 0
 # }
-outfile = codecs.open(band + '_all_hangul.txt', 'w', 'utf-8', 'ignore')
-english_outfile = codecs.open(band + '_english_only.txt', 'w', 'utf-8', 'ignore')
+outfile = codecs.open(band + '_all_hangul_updated.txt', 'w', 'utf-8', 'ignore')
+english_outfile = codecs.open(band + '_english_only_updated.txt', 'w', 'utf-8', 'ignore')
 
 d = defaultdict(int)
 
@@ -55,6 +55,8 @@ rows = rows[0]
 releases = re.findall('<td>(.*?)</td>', rows, re.DOTALL)		#each td is an album
 
 releasesParsed = []
+songtitles = []
+songlinks = []
 
 for release in releases:				#for each album
 	title = re.findall('\[#\d+\](.*?)<', release, re.DOTALL)			#titles of albums in the form of one-item lists
@@ -73,38 +75,44 @@ for album in releasesParsed:		#for each list containing string and other list wi
 		continue
 
 	for song in tracklist:					#per track url
-		outfile.write('\t' + song[1] + '\n')	#song title, second item in each tuple
-		english_outfile.write('\t' + song[1] + '\n')
-		songDir = song[0]						#song link
-		try:
-			songHtml = html.unescape(urllib.request.urlopen(songDir).read().decode('utf-8'))	#open, decode, unescape characters
-		except Exception:
-			continue
+		if (song[1].lower() not in songtitles) and (song[0] not in songlinks) and ("japanese" not in song[1].lower()): #if the title and link have not yet been encountered and the song isn't a japanese version
+			songtitles.append(song[1].lower())
+			songlinks.append(song[0])
 
-		try:
-			#romanization = re.findall('<tbody>.<tr>.*?</tr>.<tr>.<td>(.*?)</td>', songHtml, re.DOTALL)[0]
-			hangul = re.findall('<tbody>.<tr>.*?</tr>.<tr>.<td>.*?</td>.<td>(.*?)</td>', songHtml, re.DOTALL)[0]
-		except Exception:
-			continue
-		working_text = hangul								#change this depending on desired printout
-		working_text = working_text.replace('<br />', '')
-		working_text = re.sub('<.*?>', '', working_text)
-		working_text = working_text.split('\n')
-		for line in working_text:
-			#print('New line: ' + line)
-			line = line.strip()
-			outfile.write('\t\t%s\n' % line)
-			line = re.sub('[^a-zA-Z\' ]', '', line)
-			line = line.split()
-			for word in line:
-				word = word.lower()
-				d[word] += 1
-			line = ' '.join(line)
-			if len(line) < 1:
+			songDir = song[0]						#song link
+			try:
+				songHtml = html.unescape(urllib.request.urlopen(songDir).read().decode('utf-8'))	#open, decode, unescape characters
+			except Exception:
 				continue
-			english_outfile.write('\t\t%s\n' % line)
-		outfile.write('\n')
-		english_outfile.write('\n')
+			try:
+				#romanization = re.findall('<tbody>.<tr>.*?</tr>.<tr>.<td>(.*?)</td>', songHtml, re.DOTALL)[0]
+				hangul = re.findall('<tbody>.<tr>.*?</tr>.<tr>.<td>.*?</td>.<td>(.*?)</td>', songHtml, re.DOTALL)[0]
+			except Exception:
+				continue
+			if re.search('[\u3041-\u3096]', hangul): #if the song contains any japanese characters
+				continue							#skip the next block
+			outfile.write('\t' + song[1] + '\n')	#song title, second item in each tuple
+			english_outfile.write('\t' + song[1] + '\n')
+
+			working_text = hangul								#change this depending on desired printout
+			working_text = working_text.replace('<br />', '')
+			working_text = re.sub('<.*?>', '', working_text)
+			working_text = working_text.split('\n')
+			for line in working_text:
+				#print('New line: ' + line)
+				line = line.strip()
+				outfile.write('\t\t%s\n' % line)
+				line = re.sub('[^a-zA-Z\' ]', '', line)
+				line = line.split()
+				for word in line:
+					word = word.lower()
+					d[word] += 1
+				line = ' '.join(line)
+				if len(line) < 1:
+					continue
+				english_outfile.write('\t\t%s\n' % line)
+			outfile.write('\n')
+			english_outfile.write('\n')
 
 for entry in sorted(d.items(), key=lambda x: (-x[1],x[0])):
     print ('%s\t%s' % (entry[0], entry[1]))
